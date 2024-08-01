@@ -1,0 +1,95 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_RULES 10
+#define MAX_LEN 100
+
+void eliminateLeftRecursion(char* nonTerminals, char** productions, int numRules) {
+    char** newProductions = (char*)malloc(MAX_RULES * sizeof(char));
+    for (int i = 0; i < MAX_RULES; i++) {
+        newProductions[i] = (char*)malloc(MAX_LEN * sizeof(char));
+    }
+    int newRulesCount = 0;
+    
+    for (int i = 0; i < numRules; i++) {
+        char nonTerminal = nonTerminals[i];
+        char alpha[MAX_RULES][MAX_LEN], beta[MAX_RULES][MAX_LEN];
+        int alphaCount = 0, betaCount = 0;
+        
+        char* token = strtok(productions[i], "|");
+        while (token != NULL) {
+            if (token[0] == nonTerminal) {
+                strcpy(alpha[alphaCount++], token + 1);
+            } else {
+                strcpy(beta[betaCount++], token);
+            }
+            token = strtok(NULL, "|");
+        }
+
+        if (alphaCount > 0) {
+            char newNonTerminal[3] = {nonTerminal, '\'', '\0'};
+            
+            strcpy(newProductions[newRulesCount], "");
+            for (int j = 0; j < betaCount; j++) {
+                strcat(newProductions[newRulesCount], beta[j]);
+                strcat(newProductions[newRulesCount], newNonTerminal);
+                if (j < betaCount - 1) strcat(newProductions[newRulesCount], "|");
+            }
+            nonTerminals[numRules + newRulesCount] = newNonTerminal[0];
+            newRulesCount++;
+            
+            strcpy(newProductions[newRulesCount], "");
+            for (int j = 0; j < alphaCount; j++) {
+                strcat(newProductions[newRulesCount], alpha[j]);
+                strcat(newProductions[newRulesCount], newNonTerminal);
+                strcat(newProductions[newRulesCount], "|");
+            }
+            strcat(newProductions[newRulesCount], "ε");
+            nonTerminals[numRules + newRulesCount] = newNonTerminal[0];
+            newRulesCount++;
+        } else {
+            strcpy(newProductions[newRulesCount], productions[i]);
+            newRulesCount++;
+        }
+    }
+    
+    printf("\nGrammar after eliminating left recursion:\n");
+    for (int i = 0; i < numRules + newRulesCount; i++) {
+        printf("%c → %s\n", nonTerminals[i], newProductions[i]);
+    }
+
+    for (int i = 0; i < MAX_RULES; i++) {
+        free(newProductions[i]);
+    }
+    free(newProductions);
+}
+
+int main() {
+    int numRules;
+    char* nonTerminals = (char*)malloc(MAX_RULES * sizeof(char));
+    char** productions = (char*)malloc(MAX_RULES * sizeof(char));
+    for (int i = 0; i < MAX_RULES; i++) {
+        productions[i] = (char*)malloc(MAX_LEN * sizeof(char));
+    }
+
+    printf("Enter number of rules: ");
+    scanf("%d", &numRules);
+    
+    for (int i = 0; i < numRules; i++) {
+        printf("Enter non-terminal for rule %d: ", i + 1);
+        scanf(" %c", &nonTerminals[i]);
+        printf("Enter productions for %c (use | to separate multiple productions): ", nonTerminals[i]);
+        scanf(" %s", productions[i]);
+    }
+
+    eliminateLeftRecursion(nonTerminals, productions, numRules);
+
+    free(nonTerminals);
+    for (int i = 0; i < MAX_RULES; i++) {
+        free(productions[i]);
+    }
+    free(productions);
+
+    return 0;
+}
